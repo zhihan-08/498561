@@ -13,11 +13,17 @@
       display: flex; align-items: center; justify-content: center;
       flex-direction: column; z-index: 2;
     }
-    #startBtn, #soundBtn {
+    #startBtn, #soundBtn, #nextLevelBtn {
       margin: 10px;
       padding: 10px 20px;
       font-size: 18px;
       cursor: pointer;
+    }
+    #nextLevelBtn {
+      display: none;
+      background-color: #28a745;
+      color: white;
+      border: none;
     }
     #timer {
       position: absolute; top: 10px; right: 10px;
@@ -33,6 +39,7 @@
       <p>點擊畫面上的垃圾，全部收集完即可過關。<br>點到魚會失敗！</p>
       <button id="startBtn">開始遊戲</button>
       <button id="soundBtn">🔊 開啟音樂</button>
+      <button id="nextLevelBtn">前往第四關</button>
     </div>
     <div id="timer">30</div>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
@@ -47,6 +54,7 @@
     const overlay = document.getElementById("overlay");
     const startBtn = document.getElementById("startBtn");
     const soundBtn = document.getElementById("soundBtn");
+    const nextLevelBtn = document.getElementById("nextLevelBtn");
     const timerEl = document.getElementById("timer");
     const bgm = document.getElementById("bgm");
 
@@ -60,46 +68,36 @@
     trashImgs[2].src = "https://png.pngtree.com/png-vector/20220120/ourmid/pngtree-creative-tableware-png-image_4349678.png";
 
     let objects = [], timer = 30, interval, playing = false;
+    let musicOn = true;
 
     function initGame() {
       objects = [];
-      // 8 隻魚
       for(let i=0;i<8;i++){
-        objects.push({
-          type: 'fish',
-          img: fishImg,
-          x: Math.random()*760+20,
-          y: Math.random()*560+20,
-          size: 50
-        });
+        objects.push({ type: 'fish', img: fishImg, x: Math.random()*760+20, y: Math.random()*560+20, size: 50 });
       }
-      // 每種垃圾 3 個
       trashImgs.forEach(img=>{
         for(let i=0;i<3;i++){
-          objects.push({
-            type: 'trash',
-            img: img,
-            x: Math.random()*760+20,
-            y: Math.random()*560+20,
-            size: 40
-          });
+          objects.push({ type: 'trash', img: img, x: Math.random()*760+20, y: Math.random()*560+20, size: 40 });
         }
       });
       timer = 30;
       timerEl.textContent = timer;
+      nextLevelBtn.style.display = 'none'; // 重設按鈕隱藏
     }
 
     function draw() {
       ctx.clearRect(0,0,800,600);
-      objects.forEach(o => {
-        ctx.drawImage(o.img, o.x, o.y, o.size, o.size);
-      });
+      objects.forEach(o => ctx.drawImage(o.img, o.x, o.y, o.size, o.size));
     }
 
     function gameLoop() {
       if(!playing) return;
       draw();
       requestAnimationFrame(gameLoop);
+    }
+
+    function showNextLevelButton() {
+      nextLevelBtn.style.display = 'inline-block';
     }
 
     canvas.addEventListener("click", e=>{
@@ -123,6 +121,7 @@
               playing = false;
               alert("🎉 成功收集所有垃圾！");
               overlay.style.display = 'flex';
+              showNextLevelButton();
             }
             return;
           }
@@ -134,25 +133,25 @@
       overlay.style.display = 'none';
       initGame();
       playing = true;
-      bgm.play();
+      if (musicOn) bgm.play();
       interval = setInterval(()=>{
         timer--;
         timerEl.textContent = timer;
         if(timer <=0){
           clearInterval(interval);
           playing = false;
+          overlay.style.display = 'flex';
           if(objects.filter(o=>o.type==='trash').length===0){
             alert("🎉 時間到！恭喜過關");
+            showNextLevelButton();
           } else {
             alert("⏰ 時間到，但還有垃圾！遊戲失敗");
           }
-          overlay.style.display = 'flex';
         }
       }, 1000);
       gameLoop();
     });
 
-    let musicOn = true;
     soundBtn.addEventListener("click",()=>{
       musicOn = !musicOn;
       if(musicOn){
@@ -162,6 +161,10 @@
         bgm.pause();
         soundBtn.textContent = "🔇 關閉音樂";
       }
+    });
+
+    nextLevelBtn.addEventListener("click", () => {
+      window.location.href = "level4.html";
     });
   </script>
 </body>

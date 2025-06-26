@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>環保答題關卡</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#d0f4f7; font-family:Arial,sans-serif; }
+    #overlay {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.7); color:white;
+      display:flex; align-items:center; justify-content:center;
+      flex-direction:column; text-align:center;
+      padding:20px;
+    }
+    #gameArea { display:none; position:relative; width:800px; height:600px; margin:auto; }
+    .trash {
+      position:absolute; width:100px; height:100px; cursor:pointer;
+      background-size:contain; background-repeat:no-repeat;
+    }
+    #timer { position:absolute; top:10px; left:10px; font-size:24px; }
+    #musicToggle {
+      position:absolute; top:10px; right:10px; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="overlay">
+    <h1>第四關：環保答題</h1>
+    <p>點擊畫面中的 3 種垃圾，並在 30 秒內回答每題選擇題。<br>答對全部即可過關，答錯或超時需重來！</p>
+    <button id="startBtn">開始遊戲</button>
+  </div>
+
+  <div id="gameArea">
+    <div id="timer">時間：30</div>
+    <div id="musicToggle">🔊 開/關音樂</div>
+    <div id="trashes">
+      <div id="t1" class="trash" style="top:100px; left:100px; background-image:url('https://png.pngtree.com/element_our/20190529/ourmid/pngtree-cans-cartoon-grunge-illustration-image_1200005.jpg');"></div>
+      <div id="t2" class="trash" style="top:250px; left:350px; background-image:url('https://png.pngtree.com/element_our/20200702/ourmid/pngtree-beautiful-hand-painted-plastic-bag-png-element-image_2288144.jpg');"></div>
+      <div id="t3" class="trash" style="top:150px; left:600px; background-image:url('https://png.pngtree.com/png-vector/20220120/ourmid/pngtree-creative-tableware-png-image_4349678.png');"></div>
+    </div>
+  </div>
+
+  <audio id="bgm" src="https://cdn.pixabay.com/download/audio/2021/12/07/audio_7a494e715f.mp3?filename=relaxing-music-ode-to-bliss-3454.mp3" loop></audio>
+
+  <script>
+    const overlay = document.getElementById('overlay');
+    const gameArea = document.getElementById('gameArea');
+    const startBtn = document.getElementById('startBtn');
+    const timerEl = document.getElementById('timer');
+    const musicToggle = document.getElementById('musicToggle');
+    const bgm = document.getElementById('bgm');
+    const trashes = ['t1','t2','t3'];
+    let answered = {};
+    let timeLeft = 30, timer;
+
+    const questions = {
+      t1: {
+        q: '鐵罐屬於哪種垃圾？',
+        options: ['可回收物','一般垃圾','廚餘'],
+        answer: 0
+      },
+      t2: {
+        q: '塑膠袋應歸類為？',
+        options: ['一般垃圾','有害垃圾','可回收物'],
+        answer: 0
+      },
+      t3: {
+        q: '這些塑膠餐具應丟到？',
+        options: ['一般垃圾','可回收物','廚餘'],
+        answer: 0
+      }
+    };
+
+    function startGame(){
+      overlay.style.display='none';
+      gameArea.style.display='block';
+      bgm.play();
+      timer = setInterval(() => {
+        timeLeft--;
+        timerEl.textContent = '時間：' + timeLeft;
+        if(timeLeft <= 0){
+          clearInterval(timer);
+          alert('⏰ 時間到，請重新答題！');
+          resetGame();
+        }
+      }, 1000);
+    }
+
+    function resetGame(){
+      clearInterval(timer);
+      timeLeft=30;
+      answered={};
+      Object.values(questions).forEach((_,i)=>document.getElementById('t'+(i+1)).style.pointerEvents='auto');
+      timerEl.textContent='時間：30';
+      overlay.querySelector('p').innerHTML = '點擊畫面中的 3 種垃圾，並在 30 秒內回答每題選擇題。<br>答對全部即可過關，答錯或超時需重來！';
+      overlay.style.display='flex';
+      gameArea.style.display='none';
+    }
+
+    trashes.forEach(id=>{
+      document.getElementById(id).addEventListener('click', () => {
+        if(answered[id]) return;
+        const qa = questions[id];
+        const ans = prompt(`${qa.q}\n1. ${qa.options[0]}\n2. ${qa.options[1]}\n3. ${qa.options[2]}\n請輸入數字 1-3`);
+        const chosen = parseInt(ans) - 1;
+        if(chosen === qa.answer){
+          answered[id] = true;
+          document.getElementById(id).style.opacity = '0.5';
+          if(Object.keys(answered).length === trashes.length){
+            clearInterval(timer);
+            alert('🎉 恭喜全部答對，過關成功！');
+            resetGame();
+          }
+        } else {
+          alert('答錯了！從頭開始。');
+          resetGame();
+        }
+      });
+    });
+
+    musicToggle.addEventListener('click', () => {
+      if(bgm.paused){ bgm.play(); musicToggle.textContent='🔊 音樂 開'; }
+      else { bgm.pause(); musicToggle.textContent='🔇 音樂 關'; }
+    });
+
+    startBtn.addEventListener('click', startGame);
+  </script>
+</body>
+</html>
