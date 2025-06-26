@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>飢餓小魚的試煉</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#87ceeb; font-family:Arial,sans-serif; }
+    #gameContainer { position:relative; width:800px; height:600px; margin:auto; top:50px; background:#1e90ff; }
+    canvas { display:block; }
+    #ui {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; background:rgba(0,0,0,0.5); color:white;
+      text-align:center; font-size:18px;
+    }
+    #score, #timer {
+      position:absolute; color:white; font-size:20px; font-weight:bold;
+      padding:5px 10px; background:rgba(0,0,0,0.3); border-radius:4px;
+    }
+    #score { top:10px; left:10px; }
+    #timer { top:10px; right:10px; }
+    #musicBtn {
+      position:absolute; bottom:10px; right:10px;
+      padding:5px 10px; background:rgba(0,0,0,0.3); color:white;
+      border:none; cursor:pointer;
+    }
+    #nextLevelBtn {
+      display: none;
+      position: absolute;
+      bottom: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 10px 20px;
+      background-color: #32cd32;
+      color: white;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="ui">
+      <h2>遊戲說明</h2>
+      <p>滑鼠移動小魚，吃 10 隻食物魚。</p>
+      <p>避開垃圾，碰到垃圾會重新開始。</p>
+      <p>限時 30 秒完成任務。</p>
+      <button id="startBtn">開始遊戲</button>
+    </div>
+    <div id="score">分數：0 / 10</div>
+    <div id="timer">時間：30</div>
+    <button id="musicBtn">🔇 關閉音樂</button>
+    <button id="nextLevelBtn">前往下一關</button>
+  </div>
+
+  <audio id="bgm" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_94d15274ae.mp3?filename=summer-sea-ambient-112310.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const ui = document.getElementById('ui');
+    const startBtn = document.getElementById('startBtn');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const musicBtn = document.getElementById('musicBtn');
+    const nextLevelBtn = document.getElementById('nextLevelBtn');
+    const bgm = document.getElementById('bgm');
+
+    const fish = { x:400, y:300, size:50 };
+    const foods = [], trashes = [];
+    let score=0, timeLeft=30, gameInterval, timerInterval, running=false;
+
+    const playerImg = new Image();
+    playerImg.src = "https://img.tukuppt.com/ad_preview/00/36/21/8o1RZUZofF.jpg!/both/260x260";
+    const foodImg = new Image();
+    foodImg.src = "https://png.pngtree.com/png-clipart/20190629/original/pngtree-food-elements-hand-drawn-cute-cartoon-gourmet-fish-png-image_4056333.jpg";
+    const trashImg = new Image();
+    trashImg.src = "https://png.pngtree.com/element_our/20190529/ourmid/pngtree-cans-cartoon-grunge-illustration-image_1200005.jpg";
+
+    function spawnObjects() {
+      foods.length=0; trashes.length=0;
+      for(let i=0;i<10;i++){
+        foods.push({ x:Math.random()*760+20, y:Math.random()*560+20, size:40 });
+      }
+      for(let i=0;i<5;i++){
+        trashes.push({ x:Math.random()*760+20, y:Math.random()*560+20, size:50 });
+      }
+    }
+
+    function startGame(){
+      ui.style.display='none';
+      nextLevelBtn.style.display='none';
+      score=0; timeLeft=30;
+      fish.x=400; fish.y=300;
+      scoreEl.textContent=`分數：0 / 10`;
+      timerEl.textContent=`時間：30`;
+      spawnObjects();
+      running=true;
+      gameInterval = requestAnimationFrame(gameLoop);
+      timerInterval = setInterval(()=>{
+        timeLeft--;
+        timerEl.textContent=`時間：${timeLeft}`;
+        if(timeLeft<=0){ endGame(false); }
+      },1000);
+      bgm.play();
+      musicBtn.textContent='🔇 關閉音樂';
+    }
+
+    function endGame(win){
+      running=false;
+      cancelAnimationFrame(gameInterval);
+      clearInterval(timerInterval);
+      alert(win? '🎉 成功過關！':'⏰ 時間到或碰到垃圾，遊戲結束');
+      ui.style.display='flex';
+      if(win){
+        nextLevelBtn.style.display='block';
+      }
+    }
+
+    canvas.addEventListener('mousemove', e=>{
+      const rect = canvas.getBoundingClientRect();
+      fish.x = e.clientX - rect.left;
+      fish.y = e.clientY - rect.top;
+    });
+
+    musicBtn.onclick = () => {
+      if(bgm.paused){ bgm.play(); musicBtn.textContent='🔇 關閉音樂'; }
+      else { bgm.pause(); musicBtn.textContent='🔊 開啟音樂'; }
+    };
+
+    nextLevelBtn.onclick = () => {
+      window.location.href = 'level2.html';
+    };
+
+    function gameLoop(){
+      if(!running) return;
+      ctx.clearRect(0,0,800,600);
+      ctx.drawImage(playerImg, fish.x-25, fish.y-25, 50, 50);
+      foods.forEach((f,i)=>{
+        ctx.drawImage(foodImg, f.x-20, f.y-20, 40, 40);
+        if(Math.hypot(f.x-fish.x,f.y-fish.y)<30){
+          foods.splice(i,1);
+          score++;
+          scoreEl.textContent=`分數：${score} / 10`;
+          if(score>=10){ endGame(true); return; }
+        }
+      });
+      trashes.forEach((t)=>{
+        ctx.drawImage(trashImg, t.x-25, t.y-25, 50, 50);
+        if(Math.hypot(t.x-fish.x,t.y-fish.y)<35){
+          endGame(false);
+        }
+      });
+      if(running) gameInterval = requestAnimationFrame(gameLoop);
+    }
+
+    startBtn.onclick = startGame;
+    document.addEventListener('DOMContentLoaded',()=>{
+      timerEl.style.display='block';
+      scoreEl.style.display='block';
+      musicBtn.style.display='block';
+    });
+  </script>
+</body>
+</html>
+

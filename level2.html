@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>飢餓小魚第2關</title>
+  <style>
+    body { margin:0; overflow:hidden; background:#87ceeb; font-family:Arial,sans-serif; }
+    #gameContainer { position:relative; width:800px; height:600px; margin:auto; top:50px; background:#1e90ff; }
+    canvas { display:block; background: url('https://cdn.pixabay.com/photo/2017/08/07/08/34/water-2605517_1280.jpg') center/cover; }
+    #ui {
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      display:flex; flex-direction:column; align-items:center;
+      justify-content:center; background:rgba(0,0,0,0.5); color:white;
+      text-align:center; font-size:18px;
+    }
+    #timer {
+      position:absolute; top:10px; right:10px; color:white;
+      font-size:20px; font-weight:bold;
+      padding:5px 10px; background:rgba(0,0,0,0.3); border-radius:4px;
+    }
+    #musicBtn {
+      position:absolute; bottom:10px; right:10px;
+      padding:5px 10px; background:rgba(0,0,0,0.3); color:white;
+      border:none; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="ui">
+      <h2>第二關：鍵盤操控小魚</h2>
+      <p>使用 ← → ↑ ↓ 鍵控制小魚</p>
+      <p>避開從上方掉落的垃圾</p>
+      <p>游到畫面最上方即可通過！</p>
+      <p>限時 30 秒，倒數計時開始</p>
+      <button id="startBtn">開始遊戲</button>
+    </div>
+    <div id="timer">時間：30</div>
+    <button id="musicBtn">🔇 關閉音樂</button>
+  </div>
+
+  <!-- 背景音樂 -->
+  <audio id="bgm" loop>
+    <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_94d15274ae.mp3?filename=summer-sea-ambient-112310.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const ui = document.getElementById('ui');
+    const startBtn = document.getElementById('startBtn');
+    const timerEl = document.getElementById('timer');
+    const musicBtn = document.getElementById('musicBtn');
+    const bgm = document.getElementById('bgm');
+
+    const fishImg = new Image();
+    fishImg.src = "https://img.tukuppt.com/ad_preview/00/36/21/8o1RZUZofF.jpg!/both/260x260";
+
+    const trashImgs = [
+      (new Image()), (new Image()), (new Image())
+    ];
+    trashImgs[0].src = "https://png.pngtree.com/element_our/20190529/ourmid/pngtree-cans-cartoon-grunge-illustration-image_1200005.jpg";
+    trashImgs[1].src = "https://png.pngtree.com/element_our/20200702/ourmid/pngtree-beautiful-hand-painted-plastic-bag-png-element-image_2288144.jpg";
+    trashImgs[2].src = "https://png.pngtree.com/png-vector/20220120/ourmid/pngtree-creative-tableware-png-image_4349678.png";
+
+    let fish = { x:400, y:500, size:50, speed:5 };
+    let trashes = [], timeLeft=30;
+    let timerInterval, running=false;
+
+    function spawnTrash(){
+      const x = Math.random() * (800 - 40) + 20;
+      const size = 40;
+      const img = trashImgs[Math.floor(Math.random() * trashImgs.length)];
+      trashes.push({ x, y: -size, size, img, speed:2 + Math.random() * 2 });
+    }
+
+    function startGame(){
+      ui.style.display = 'none';
+      fish.x = 400; fish.y = 500;
+      trashes = []; timeLeft = 30;
+      timerEl.textContent = `時間：${timeLeft}`;
+      running = true;
+
+      timerInterval = setInterval(()=>{
+        timeLeft--;
+        timerEl.textContent = `時間：${timeLeft}`;
+        if(timeLeft <= 0) endGame(false);
+      },1000);
+
+      bgm.play();
+      musicBtn.textContent = '🔇 關閉音樂';
+
+      requestAnimationFrame(gameLoop);
+      spawnTrash();
+    }
+
+    function endGame(win){
+      running = false;
+      clearInterval(timerInterval);
+      bgm.pause();
+      alert(win ? '🎉 通關成功！' : '💥 遊戲結束！');
+      ui.style.display = 'flex';
+    }
+
+    document.addEventListener('keydown', e => {
+      if(!running) return;
+      if(e.key === 'ArrowLeft') fish.x -= fish.speed;
+      if(e.key === 'ArrowRight') fish.x += fish.speed;
+      if(e.key === 'ArrowUp') fish.y -= fish.speed;
+      if(e.key === 'ArrowDown') fish.y += fish.speed;
+      fish.x = Math.max(0, Math.min(800 - fish.size, fish.x));
+      fish.y = Math.max(0, Math.min(600 - fish.size, fish.y));
+    });
+
+    musicBtn.onclick = () => {
+      if(bgm.paused) {
+        bgm.play();
+        musicBtn.textContent = '🔇 關閉音樂';
+      } else {
+        bgm.pause();
+        musicBtn.textContent = '🔊 開啟音樂';
+      }
+    };
+
+    function gameLoop(){
+      if(!running) return;
+      ctx.clearRect(0,0,800,600);
+
+      // 畫魚
+      ctx.drawImage(fishImg, fish.x, fish.y, fish.size, fish.size);
+
+      // 處理垃圾
+      if(Math.random() < 0.02) spawnTrash();
+      trashes.forEach((t, i) => {
+        t.y += t.speed;
+        ctx.drawImage(t.img, t.x, t.y, t.size, t.size);
+        if(t.y > 600) trashes.splice(i, 1);
+
+        // 碰撞檢測
+        if(Math.hypot(t.x + t.size/2 - (fish.x + fish.size/2),
+                     t.y + t.size/2 - (fish.y + fish.size/2)) < (t.size/2 + fish.size/2)) {
+          endGame(false);
+        }
+      });
+
+      // 成功條件：游到頂端
+      if(fish.y <= 0) { endGame(true); return; }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    startBtn.onclick = startGame;
+  </script>
+</body>
+</html>
